@@ -1,10 +1,217 @@
 <!doctype html>
 <html>
-  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <head>
+    <meta charset="utf-8" />
     <title>EcoCity Builder Diagrams</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: system-ui, Arial; padding: 16px; max-width: 1100px; margin: 0 auto; }
+      .card { border: 1px solid #ddd; border-radius: 12px; padding: 14px; margin: 14px 0; }
+      h2 { margin: 0 0 8px; }
+      .hint { color: #555; font-size: 12px; margin-top: 6px; }
+    </style>
   </head>
+
   <body>
     <h1>EcoCity Builder – Diagrams</h1>
-    <p>Paste the finalized Mermaid diagram HTML here.</p>
+
+    <div class="card">
+      <h2>Use Case Diagram</h2>
+      <div class="hint">Includes FR1–FR11 + key user stories (tutorial + 3-turn projection).</div>
+      <pre class="mermaid">
+flowchart LR
+  Player((Player))
+
+  Player --> UC1["Start New City (FR1)"]
+  Player --> UC6["Resume Session (FR6)"]
+  Player --> UC3["View Metric Dashboard (FR3)"]
+  Player --> UC2["Take Turn Action (FR2)"]
+  Player --> UC4["Respond to Event (FR4)"]
+  Player --> UC5["See Achievements + Feedback (FR7)"]
+  Player --> UC7["View Post-game Report (FR11)"]
+  Player --> UC10["Scenario Completion Summary (FR10)"]
+  Player --> UC11["Onboarding Tutorial (US1)"]
+
+  UC2 --> AC1["Zoning"]
+  UC2 --> AC2["Infrastructure Investment"]
+  UC2 --> AC3["Policy Enactment"]
+
+  AC3 --> UC8["Multi-turn Policy Effects (FR8)"]
+  UC2 --> UC9["Budget/Resource Constraints + Tooltip (FR5)"]
+  UC2 --> UC12["Projected 3-turn Outcomes (US2)"]
+      </pre>
+    </div>
+
+    <div class="card">
+      <h2>Sequence Diagram – “Take Action” Turn</h2>
+      <pre class="mermaid">
+sequenceDiagram
+  participant P as Player
+  participant UI as Frontend UI
+  participant API as Backend API
+  participant DB as PostgreSQL
+  participant SIM as Simulation Engine
+
+  P->>UI: Select action + (optional) tiles
+  UI->>API: POST /api/city/action (action payload)
+  API->>DB: BEGIN
+  API->>DB: SELECT city FOR UPDATE
+  API->>SIM: Resolve multi-turn policy ticks (FR8)
+  API->>SIM: Validate constraints (FR5/FR9)
+  alt Insufficient budget / invalid placement
+    API-->>UI: 409 blocked + tooltip reason
+  else OK
+    API->>SIM: Apply action effects (FR2)
+    SIM-->>API: Updated state + delta
+    API->>SIM: Check/Generate event every ≤3 turns (FR4)
+    API->>DB: INSERT decision history (FR6)
+    API->>DB: UPDATE city state + budget (FR6)
+    API->>DB: COMMIT (NFR3)
+    API-->>UI: state, metrics, pendingEvent, achievements
+    UI-->>P: Dashboard updates + trendlines (FR3)
+  end
+      </pre>
+    </div>
+
+    <div class="card">
+      <h2>Class Diagram (Core Model) – Fixed</h2>
+      <div class="hint">Fixes the missing MetricsDelta type + uses composition where appropriate.</div>
+      <pre class="mermaid">
+classDiagram
+  class Player {
+    +uuid id
+    +string email
+    +string displayName
+  }
+
+  class City {
+    +uuid id
+    +string name
+    +string difficulty
+    +bigint seed
+    +int turn
+    +int budget
+    +CityState state
+  }
+
+  class CityState {
+    +string geography
+    +int gridW
+    +int gridH
+    +Tile[][] tiles
+    +Metrics metrics
+    +PolicyEffect[] activePolicies
+    +int lastEventTurn
+  }
+
+  class Tile {
+    +string zone
+    +string building
+    +bool floodplain
+  }
+
+  class Metrics {
+    +int happiness
+    +int envHealth
+    +int econStability
+    +int carbon
+  }
+
+  class MetricsDelta {
+    +int? happiness
+    +int? envHealth
+    +int? econStability
+    +int? carbon
+  }
+
+  class PolicyEffect {
+    +string code
+    +int remainingTurns
+    +MetricsDelta perTurnDelta
+  }
+
+  class Decision {
+    +uuid id
+    +int turn
+    +string kind
+    +json payload
+    +json delta
+  }
+
+  class Achievement {
+    +uuid id
+    +string code
+    +string title
+    +string description
+  }
+
+  Player "1" --> "0..*" City
+  City "1" --> "0..*" Decision
+  City "1" --> "0..*" Achievement
+
+  City *-- CityState
+  CityState *-- Tile
+  CityState *-- Metrics
+  CityState *-- PolicyEffect
+  PolicyEffect --> MetricsDelta
+      </pre>
+    </div>
+
+    <div class="card">
+      <h2>ERD (Database)</h2>
+      <div class="hint">Matches the PostgreSQL schema: players, cities, decisions, achievements.</div>
+      <pre class="mermaid">
+erDiagram
+  PLAYERS ||--o{ CITIES : owns
+  CITIES  ||--o{ DECISIONS : records
+  CITIES  ||--o{ ACHIEVEMENTS : unlocks
+
+  PLAYERS {
+    uuid id PK
+    text email UK
+    text password_hash
+    text display_name
+    timestamptz created_at
+  }
+
+  CITIES {
+    uuid id PK
+    uuid player_id FK
+    text name
+    text difficulty
+    bigint seed
+    int turn
+    int budget
+    jsonb state_json
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  DECISIONS {
+    uuid id PK
+    uuid city_id FK
+    int turn
+    text kind
+    jsonb payload
+    jsonb delta
+    timestamptz created_at
+  }
+
+  ACHIEVEMENTS {
+    uuid id PK
+    uuid city_id FK
+    text code
+    text title
+    text description
+    timestamptz unlocked_at
+  }
+      </pre>
+    </div>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+      mermaid.run();
+    </script>
   </body>
 </html>

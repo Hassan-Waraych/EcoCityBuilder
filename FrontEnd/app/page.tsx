@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import startScreenBg from "../art/StartScreen.png";
+
 const decisionPool = [
   {
     title: "Build Affordable Housing",
@@ -77,19 +79,36 @@ export default function HomePage() {
     setStarted(true);
   };
 
+  if (!started) {
+    return (
+      <div
+        className="start-screen"
+        style={{ backgroundImage: `url(${startScreenBg.src})` }}
+      >
+        <h1 className="start-screen-title">Eco City Builder</h1>
+        <div className="start-screen-btn-wrap">
+          <button
+            type="button"
+            className="start-screen-btn"
+            onClick={() => setStarted(true)}
+          >
+            Start Game
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
-      <h1>EcoCity Builder</h1>
+      <h1>Eco City Builder</h1>
       <p>
         Build a sustainable city by balancing happiness, environment, economy,
         and carbon impact.
       </p>
 
-      {!started ? (
-        <button onClick={() => setStarted(true)}>Start Game</button>
-      ) : (
-        <>
-          <h2>Turn {Math.min(game.turn, 10)} / 10</h2>
+      <>
+        <h2>Turn {Math.min(game.turn, 10)} / 10</h2>
 
           <div style={{ marginBottom: "1rem" }}>
             <p>Happiness: {game.happiness}</p>
@@ -117,8 +136,7 @@ export default function HomePage() {
               <button onClick={resetGame}>Play Again</button>
             </div>
           )}
-        </>
-      )}
+      </>
     </main>
   );
 }

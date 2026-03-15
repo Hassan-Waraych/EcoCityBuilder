@@ -121,3 +121,61 @@ body {
     0 2px 0 #0f5132,
     0 4px 12px rgba(0, 0, 0, 0.35);
 }
+
+/* Intro screen */
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 2rem 2rem;
+  box-sizing: border-box;
+}
+
+.intro-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 40%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+  pointer-events: none;
+}
+
+.intro-text-box {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: min(calc(100vw - 4rem), 72rem);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  color: #1a1a1a;
+  font-size: clamp(0.875rem, 1.8vw, 1rem);
+  line-height: 1.6;
+}
+
+.intro-text-box .intro-continue {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.intro-text-box .intro-continue:hover {
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+}

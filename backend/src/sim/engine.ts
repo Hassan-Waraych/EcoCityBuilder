@@ -415,12 +415,31 @@ export function scoreTier(score: number): string {
   return "F - Collapsed City";
 }
 
-export function achievementsForScore(score: number): string[] {
-  if (score >= 95000) return ["eco_hero"];
-  if (score >= 85000) return ["green_city"];
-  if (score >= 70000) return ["eco_conscious"];
-  if (score >= 50000) return ["city_planner"];
-  return [];
+export function achievementsForScore(
+  score: number,
+  metrics: SessionMetrics,
+  difficulty: string,
+  turnsCompleted: number,
+): string[] {
+  const earned: string[] = [];
+
+  // Every completed run earns First Victory
+  earned.push("first_win");
+
+  // Score-based badges
+  if (metrics.envHealth >= 70 && metrics.carbonFootprint <= 3000) earned.push("green_city");
+  if (metrics.economy >= 70 && metrics.budget >= 50000) earned.push("budget_master");
+  if (metrics.happiness >= 75) earned.push("happy_citizens");
+  if (metrics.envHealth >= 80 && metrics.carbonFootprint <= 2000) earned.push("eco_champion");
+  if (score >= 70000) earned.push("urban_planner");
+  if (difficulty === "hard") earned.push("hard_mode_win");
+  if (metrics.carbonFootprint <= 1000) earned.push("carbon_neutral");
+  if (score >= 85000) earned.push("infrastructure_king");
+  if (metrics.population >= 100000) earned.push("population_boom");
+  if (turnsCompleted >= 15) earned.push("survivor");
+  if (turnsCompleted <= 10 && score >= 50000) earned.push("speed_builder");
+
+  return earned;
 }
 
 function applyDelta(metrics: SessionMetrics, delta: MetricsDelta): SessionMetrics {
@@ -761,7 +780,7 @@ export function resolveTurn(
   const status = lossReason ? "lost" : completed ? "completed" : "active";
   const finalScore = completed ? calculateScore(metrics, MAX_TURNS) : null;
   const resultTier = finalScore != null ? scoreTier(finalScore) : null;
-  const achievements = finalScore != null ? achievementsForScore(finalScore) : [];
+  const achievements = finalScore != null ? achievementsForScore(finalScore, metrics, session.difficulty, session.currentTurn) : [];
 
   const nextTurn = status === "active" ? session.currentTurn + 1 : session.currentTurn;
   const pendingProjects = status === "active" ? drawProjects(nextTurn + metrics.population) : [];

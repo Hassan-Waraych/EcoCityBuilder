@@ -9,8 +9,13 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
+const useSsl =
+  /sslmode=require/i.test(connectionString) ||
+  /supabase\.co/i.test(connectionString);
+
 export const pool = new pg.Pool({
   connectionString,
+  ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 /**
